@@ -24,6 +24,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
+// builder.Services.AddSingleton(jwtSettings);
 
 var app = builder.Build();
 
@@ -32,6 +34,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseAuthentication();
 
 }
 
