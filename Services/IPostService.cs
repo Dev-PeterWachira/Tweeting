@@ -5,13 +5,15 @@ namespace Tweeting_book.Services
 
 public interface IPostService
 {
-    List <Post> GetPosts();
+    Task <List<Post>> GetPosts();
 
-    Post GetPostById (Guid PostId);
+    Task<Post?> GetPostByIdAsync (Guid postId);
 
-    bool UpdatePost (Post PostToUpdate);
+    Task<bool> CreatePostAsync (Post post);
 
-    bool DeletePost (Guid PostId);
+   Task <bool> UpdatePostAsync (Post postToUpdate);
+
+    Task <bool> DeletePostAsync (Guid postId);
         
             
         
