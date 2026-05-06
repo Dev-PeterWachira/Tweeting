@@ -1,12 +1,13 @@
 
 
 using Microsoft.IdentityModel.Tokens;
-
-public class AuthenticatonResult
+namespace Tweeting_book.Domain{
+public class AuthenticationResult
 {
     public bool Success {get; set;}
 
     public string Token {get; set;} = string.Empty;
 
-    public IEnumerable<string> ErrorMessage {get; set;} 
+    public IEnumerable<string> Errors {get; set;} = Array.Empty<string>();
+}
 }
