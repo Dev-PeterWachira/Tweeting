@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace Tweeting_book.Data
 {
@@ -7,6 +9,11 @@ namespace Tweeting_book.Data
         public Guid Id {get; set;} 
 
         public string Name {get; set;} = string.Empty;
+
+        public string UserId {get; set;} = string.Empty;
+
+        [ForeignKey(nameof(UserId))]
+        public IdentityUser? User {get; set;}
     }
 }
 

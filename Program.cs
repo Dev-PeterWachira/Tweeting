@@ -1,31 +1,31 @@
 using Contracts.V1;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using Tweeting_book.Data;
-
+using Tweeting_book.Installers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-builder.Services.AddControllers();
+// Use your MvcInstaller for JWT, auth, controllers, swagger
+var installers = typeof(IInstaller).Assembly.ExportedTypes
+    .Where(x => typeof(IInstaller).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract)
+    .Select(Activator.CreateInstance)
+    .Cast<IInstaller>()
+    .ToList();
 
-builder.Services.AddSwaggerGen(c =>
+foreach (var installer in installers)
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "Tweeting_book",
-        Version = "v1",
-        Description = "A Restful API for a tweeting book application",
-    });
-});
+    installer.InstallServices(builder.Services, builder.Configuration);
+}
 
-// var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
-// builder.Services.AddSingleton(jwtSettings);
+// Register DataContext
+builder.Services.AddDbContext<DataContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
@@ -34,17 +34,14 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.UseAuthentication();
-
 }
 
 app.UseHttpsRedirection();
+
+// Authentication MUST come before Authorization
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
-
-
-
-
 app.Run();
-
