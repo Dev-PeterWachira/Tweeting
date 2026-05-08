@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Tweeting_book.Data;
+using Tweeting_book.Domain;
 
 namespace Tweeting_book.Migrations
 {
@@ -11,5 +12,7 @@ namespace Tweeting_book.Migrations
         }
 
         public DbSet <Post> posts {get; set;}
+
+        public DbSet<RefreshToken> RefreshTokens{get; set;}
     }
 }
