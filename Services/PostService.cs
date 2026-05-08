@@ -1,10 +1,7 @@
 using Tweeting_book.Data;
 using Contracts.V1;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;  
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Tweeting_book.Migrations;
 
 namespace Tweeting_book.Services
@@ -56,6 +53,23 @@ namespace Tweeting_book.Services
             _dataContext.posts.Remove(post);
             var deleted = await _dataContext.SaveChangesAsync();
             return deleted > 0;  
+        }
+
+
+        public async Task<bool>UserOwnsPostAsync(Guid postId, string UserId)
+        {
+            var post = await _dataContext.posts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == postId);
+            if(post == null)
+            {
+                return false;
+            }
+
+            if(post.UserId != UserId)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         
