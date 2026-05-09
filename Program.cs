@@ -1,17 +1,16 @@
 using Contracts.V1;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using Tweeting_book.Data;
 using Tweeting_book.Installers;
+using Tweeting_book.Migrations;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 
-// Use your MvcInstaller for JWT, auth, controllers, swagger
+// Run all installers
 var installers = typeof(IInstaller).Assembly.ExportedTypes
     .Where(x => typeof(IInstaller).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract)
     .Select(Activator.CreateInstance)
@@ -27,9 +26,45 @@ foreach (var installer in installers)
 builder.Services.AddDbContext<DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Register Identity (if not already in an installer)
+builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+    .AddEntityFrameworkStores<DataContext>()
+    .AddDefaultTokenProviders();
+
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("TagViewer", policy =>
+        policy.RequireClaim("tags.view", "true"));
+});
+
+
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Seed roles on startup
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+    // Apply migrations
+    await dbContext.Database.MigrateAsync();
+
+    // Seed Admin role
+    if (!await roleManager.RoleExistsAsync("Admin"))
+    {
+        await roleManager.CreateAsync(new IdentityRole("Admin"));
+    }
+
+    // Seed Poster role
+    if (!await roleManager.RoleExistsAsync("Poster"))
+    {
+        await roleManager.CreateAsync(new IdentityRole("Poster"));
+    }
+}
+
+// Configure middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -37,11 +72,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Authentication MUST come before Authorization
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

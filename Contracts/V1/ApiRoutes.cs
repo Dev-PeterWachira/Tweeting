@@ -30,6 +30,19 @@ public static class ApiRoutes
 
             public const string Refresh = Base + "/identity/Refresh";
         }
+
+        public class Tags
+        {
+            public const string GetAll = "tags";
+
+            public const string Get = "tags/{tagName}";
+
+            public const string Create = "tags";
+
+            public const string Update = "tags/{tagName}";
+
+            public const string Delete = "tags/{tagName}";
+        }
 }
 
 }

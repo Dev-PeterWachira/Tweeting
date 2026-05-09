@@ -72,6 +72,16 @@ namespace Tweeting_book.Services
             return true;
         }
 
+        public async Task<List<string>> GetAllTagsAsync()
+        {
+            var posts = await _dataContext.posts.ToListAsync();
+
+            if (posts.Any())
+            {
+                return posts.SelectMany(p => p.Tags).Distinct().ToList();
+            }
+
+            return new List<string>();        }
         
     }
 }

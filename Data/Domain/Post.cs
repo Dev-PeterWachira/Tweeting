@@ -12,6 +12,8 @@ namespace Tweeting_book.Data
 
         public string UserId {get; set;} = string.Empty;
 
+        public List<string> Tags {get; set;} = new();
+
         [ForeignKey(nameof(UserId))]
         public IdentityUser? User {get; set;}
     }

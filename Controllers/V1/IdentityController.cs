@@ -4,6 +4,7 @@ using Tweeting_book.Services;
 using System;
 using Contracts.V1.Responses;
 using Contracts.V1.Requests;
+using Microsoft.EntityFrameworkCore.ValueGeneration.Internal;
 
 public class IdentityController : ControllerBase
 {
@@ -38,7 +39,8 @@ public class IdentityController : ControllerBase
         }
         return Ok(new AuthSuccessResponse
         {
-            Token = authResponse.Token
+            Token = authResponse.Token,
+             RefreshToken = authResponse.RefreshToken
         });
     }
 
@@ -60,10 +62,34 @@ public class IdentityController : ControllerBase
         }
         return Ok(new AuthSuccessResponse
         {
-            Token = authResponse.Token
+            Token = authResponse.Token,
+            RefreshToken = authResponse.RefreshToken
+        });
+
+        
+    }
+
+         [HttpPost(ApiRoutes.Identity.Refresh)]
+         public async Task<IActionResult> Login([FromBody]RefreshTokenRequest request)
+    {
+
+       var authResponse = await _identityService.RefreshTokenAsync(request.Token, request.RefreshToken);
+
+        if (!authResponse.Success)
+        {
+            return  BadRequest (new AuthFailed
+            {
+                Errors = authResponse.Errors
+            }) ;
+        }
+        return Ok(new AuthSuccessResponse
+        {
+            Token = authResponse.Token,
+            RefreshToken = authResponse.RefreshToken
         });
     }
 
-    
 
 }
+
+
