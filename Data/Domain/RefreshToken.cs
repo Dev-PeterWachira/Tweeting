@@ -22,6 +22,6 @@ namespace Tweeting_book.Domain
         public string UserId{get; set;} = string.Empty;
 
         [ForeignKey(nameof(UserId))]
-        public IdentityUser User {get; set;} 
+        public IdentityUser? User {get; set;} 
     }
 }

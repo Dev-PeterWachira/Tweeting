@@ -81,7 +81,72 @@ namespace Tweeting_book.Services
                 return posts.SelectMany(p => p.Tags).Distinct().ToList();
             }
 
-            return new List<string>();        }
+            return new List<string>();     
+               }
         
+        public async Task<string?> GetTagByNameAsync(string tagName)
+        {
+            var posts = await _dataContext.posts.ToListAsync();
+            var tags = posts.SelectMany(p => p.Tags).Distinct().ToList();
+            return tags.FirstOrDefault(t => t.Equals(tagName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public async Task<bool> CreateTagsAsync(string tagName)
+        {
+            var posts = await _dataContext.posts.ToListAsync();
+            var tags = posts.SelectMany(p => p.Tags).Distinct().ToList();
+
+            if(tags.Any(t => t.Equals(tagName, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+
+        public async Task<bool> UpdateTagAsync(string tagName, string newTagName)
+        {
+            var posts = await _dataContext.posts
+            .Where(p => p.Tags.Any(t => t.Equals(tagName,StringComparison.OrdinalIgnoreCase))).ToListAsync();
+
+            if (!posts.Any())
+            {
+                return false;
+            }
+               foreach (var post in posts)
+    {
+        var tagIndex = post.Tags.FindIndex(t => t.Equals(tagName, StringComparison.OrdinalIgnoreCase));
+        if (tagIndex != -1)
+        {
+            post.Tags[tagIndex] = newTagName;
+        }
     }
+
+               await _dataContext.SaveChangesAsync();
+                 return true;
 }
+
+         public async Task<bool> DeleteTagAsync(string tagName)
+{
+    var posts = await _dataContext.posts
+        .Where(p => p.Tags.Any(t => t.Equals(tagName, StringComparison.OrdinalIgnoreCase)))
+        .ToListAsync();
+
+    if (!posts.Any())
+    {
+        return false; // Tag not found
+    }
+
+    foreach (var post in posts)
+    {
+        post.Tags.RemoveAll(t => t.Equals(tagName, StringComparison.OrdinalIgnoreCase));
+    }
+
+            await _dataContext.SaveChangesAsync();
+                return true;
+}
+
+
+        }
+    }

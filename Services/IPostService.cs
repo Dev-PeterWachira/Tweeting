@@ -16,6 +16,16 @@ public interface IPostService
     Task <bool> DeletePostAsync (Guid postId);
 
     Task <bool> UserOwnsPostAsync (Guid postId, string UserId);
+
+    Task<List<string>> GetAllTagsAsync();
+
+    Task <string?> GetTagByNameAsync(string tagName);
+
+    Task<bool> CreateTagsAsync(string tagName);
+
+    Task<bool> UpdateTagAsync(string tagName, string newTagName);
+
+    Task<bool> DeleteTagAsync(string tagName);
         
             
         
