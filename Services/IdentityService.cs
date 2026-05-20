@@ -3,7 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -99,7 +99,7 @@ namespace Tweeting_book.Services
 
         public async Task<AuthenticationResult> RefreshTokenAsync(string token, string refreshToken)
         {
-            var validatedToken = GetPrincipalFromToken(token);
+            var validatedToken = GetPrincipalFromToken(token);   //checks if the token is well formed.
 
             if (validatedToken == null)
             {
@@ -111,13 +111,13 @@ namespace Tweeting_book.Services
             }
 
             var expiryDateUnix =
-                long.Parse(validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
+                long.Parse(validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);  // extracts exp claim from jwt.
 
-            var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)   // convert unix time to readable datetime.
                 .AddSeconds(expiryDateUnix);
                 // .Subtract(_jwtSettings.TokenLifeTime);
 
-            if (expiryDateTimeUtc > DateTime.UtcNow)
+            if (expiryDateTimeUtc > DateTime.UtcNow) // check if token is still valid.
             {
                 return new AuthenticationResult
                 {
@@ -126,9 +126,9 @@ namespace Tweeting_book.Services
                 };
             }
 
-            var jti = validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
+            var jti = validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;  // extract jti which links access token and refresh token.
 
-            var storedRefreshToken = await _context.RefreshTokens
+            var storedRefreshToken = await _context.RefreshTokens  // find refresh token in the database.
                 .SingleOrDefaultAsync(x => x.Token == refreshToken);
 
             if (storedRefreshToken == null)
@@ -149,7 +149,7 @@ namespace Tweeting_book.Services
                 };
             }
 
-            if (storedRefreshToken.IsInvalidated)
+            if (storedRefreshToken.IsInvalidated)  // check if refreshtoken is valid.
             {
                 return new AuthenticationResult
                 {
@@ -158,7 +158,7 @@ namespace Tweeting_book.Services
                 };
             }
 
-            if (storedRefreshToken.Used)
+            if (storedRefreshToken.Used)  // check if the refresh token has been used.
             {
                 return new AuthenticationResult
                 {
@@ -167,7 +167,7 @@ namespace Tweeting_book.Services
                 };
             }
 
-            if (storedRefreshToken.JwtId != jti)
+            if (storedRefreshToken.JwtId != jti)  // verify jwt.
             {
                 return new AuthenticationResult
                 {
@@ -199,10 +199,10 @@ namespace Tweeting_book.Services
 
         private async Task<AuthenticationResult> GenerateAuthenticationResultForUserAsync(IdentityUser user)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
+            var tokenHandler = new JwtSecurityTokenHandler();   // tokenHandler builds and reads jwt.
+            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);  // key = secret key for signing tokens(prevents tampering.)
 
-            var claims = new List<Claim>  
+            var claims = new List<Claim>  // Build Jwt claims.
             
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, user.Email!),
@@ -211,12 +211,12 @@ namespace Tweeting_book.Services
                     new Claim("id", user.Id)
                 };
 
-                var userClaims = await _userManager.GetClaimsAsync(user);
+                var userClaims = await _userManager.GetClaimsAsync(user);  // allows roles and permissions.
 
                 claims.AddRange(userClaims);
 
 
-            var tokenDescriptor = new SecurityTokenDescriptor
+            var tokenDescriptor = new SecurityTokenDescriptor   //defines how our jwt will look like.
             {
                 Subject = new ClaimsIdentity(claims),
              
@@ -229,21 +229,21 @@ namespace Tweeting_book.Services
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 
-            var refreshToken = new RefreshToken
+            var refreshToken = new RefreshToken  // create refresh token.
             {
                 Token = Guid.NewGuid().ToString(),
-                JwtId = tokenDescriptor.Subject.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value,
-                UserId = user.Id,
+                JwtId = tokenDescriptor.Subject.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value, //links refresh token to this exact jwt
+                UserId = user.Id,  //token owner.
                 CreationDate = DateTime.UtcNow,
                 ExpiryDate = DateTime.UtcNow.AddMonths(6),
                 Used = false,
                 IsInvalidated = false
             };
 
-            await _context.RefreshTokens.AddAsync(refreshToken);
+            await _context.RefreshTokens.AddAsync(refreshToken);  // save refresh token to db.
             await _context.SaveChangesAsync();
 
-            return new AuthenticationResult
+            return new AuthenticationResult  // return response.
             {
                 Success = true,
                 Token = tokenString,
@@ -253,11 +253,11 @@ namespace Tweeting_book.Services
 
         private ClaimsPrincipal? GetPrincipalFromToken(string token)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenHandler = new JwtSecurityTokenHandler();  // reads jwts, validates jwts and extracts claims.
 
             try
             {
-                var principal = tokenHandler.ValidateToken(
+                var principal = tokenHandler.ValidateToken(  // validate token.
                     token,
                     _tokenValidationParameters,
                     out var validatedToken);
@@ -277,8 +277,8 @@ namespace Tweeting_book.Services
 
         private bool IsJwtWithValidSecurityAlgorithm(SecurityToken validatedToken)
         {
-            return (validatedToken is JwtSecurityToken jwtSecurityToken) &&
-                jwtSecurityToken.Header.Alg.Equals(
+            return (validatedToken is JwtSecurityToken jwtSecurityToken) &&  // ensure token is jwt.
+                jwtSecurityToken.Header.Alg.Equals(    // ensures token was signed by hmac sha256.
                     SecurityAlgorithms.HmacSha256,
                     StringComparison.InvariantCultureIgnoreCase);
         }
